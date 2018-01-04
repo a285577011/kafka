@@ -1,0 +1,38 @@
+一、安装librdkafka
+# cd /usr/local/src/
+# git clone https://github.com/edenhill/librdkafka.git
+# cd librdkafka
+# ./configure
+# make
+# make install
+# ln -s /usr/local/lib/librdkafka.so.1 /usr/lib/
+1
+2
+3
+4
+5
+6
+7
+二、安装php-rdkafka
+# cd /usr/local/src/
+# git clone https://github.com/arnaud-lb/php-rdkafka.git
+# cd php-rdkafka
+# /usr/local/php/bin/phpize
+# ./configure --with-php-config=/usr/local/php/bin/php-config
+# make all -j 5
+# make install
+1
+2
+3
+4
+5
+6
+7
+三、修改php.ini
+# vi /etc/php.ini
+
+##增加如下代码：##
+extension=rdkafka.so
+
+##查看是否安装成功：##
+# /usr/local/php/bin/php  -m
