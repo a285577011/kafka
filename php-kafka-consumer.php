@@ -7,6 +7,7 @@ use yii\console\Controller;
 class KafkaConsumerController extends Controller
 {
 
+	protected $consumer;
 	/**
 	 * kafka消费者(手动提交)
 	 */
@@ -58,16 +59,16 @@ class KafkaConsumerController extends Controller
 		// Set the configuration to use for subscribed/assigned topics
 		$conf->setDefaultTopicConf($topicConf);
 		
-		$consumer = new \RdKafka\KafkaConsumer($conf);
+		$this->consumer = new \RdKafka\KafkaConsumer($conf);
 		
 		// Subscribe to topic 'test'
-		$consumer->subscribe([$topic]);
+		$this->consumer->subscribe([$topic]);
 		
 		echo "Waiting for partition assignment... (make take some time when\n";
 		echo "quickly re-joining the group after leaving it.)\n";
 		while (true)
 		{
-			$message = $consumer->consume(120 * 1000);
+			$message = $this->consumer->consume(120 * 1000);
 			switch ($message->err) {
 				case RD_KAFKA_RESP_ERR_NO_ERROR:
 					$className = '\app\modules\tools\kafka\\' . ucfirst($topic);
@@ -75,17 +76,17 @@ class KafkaConsumerController extends Controller
 					call_user_func_array(array($class,'run'), ['data' => json_decode($message->payload, true)]);
 					try
 					{//如果失败尝试提交两次（防节点崩溃）
-						$consumer->commit();
+						$this->consumer->commit();
 					}
 					catch (\Exception $e)
 					{
 						try
 						{
-							$consumer->commit();
+							$this->consumer->commit();
 						}
 						catch (\Exception $e)
 						{
-							$consumer->commit();
+							$this->consumer->commit();
 						}
 					}
 					pcntl_signal_dispatch();
@@ -112,6 +113,7 @@ class KafkaConsumerController extends Controller
 			case SIGQUIT:
 			case SIGTERM:
 			case SIGINT:
+				var_dump($this->consumer->unsubscribe());
 				echo 'shutdown';
 				exit();
 				break;
@@ -168,16 +170,16 @@ class KafkaConsumerController extends Controller
 			// Set the configuration to use for subscribed/assigned topics
 			$conf->setDefaultTopicConf($topicConf);
 	
-			$consumer = new \RdKafka\KafkaConsumer($conf);
+			$this->consumer = new \RdKafka\KafkaConsumer($conf);
 	
 			// Subscribe to topic 'test'
-			$consumer->subscribe([$topic]);
+			$this->consumer->subscribe([$topic]);
 	
 			echo "Waiting for partition assignment... (make take some time when\n";
 			echo "quickly re-joining the group after leaving it.)\n";
 			while (true)
 			{
-				$message = $consumer->consume(120 * 1000);
+				$message = $this->consumer->consume(120 * 1000);
 				switch ($message->err) {
 					case RD_KAFKA_RESP_ERR_NO_ERROR:
 						$className = '\app\modules\tools\kafka\\' . ucfirst($topic);
