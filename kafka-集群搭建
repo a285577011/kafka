@@ -218,3 +218,4 @@ message.send.max.retries = 3
 
 delete.topic.enable=true
     
+    ps:java环境要一致 不然会出现错误
