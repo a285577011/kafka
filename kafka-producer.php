@@ -33,32 +33,33 @@ class KafkaService
 	 */
 	public static function addKfQueue($queName, $params)
 	{
-			static $topic = null;
-			if ($topic[$queName] === null)
+		static $topic = null;
+		$conf = new \RdKafka\Conf();
+		$conf->set('log.connection.close', 'false'); // 防止断开连接
+		$conf->set('api.version.request', 'true'); // api请求版本
+		$redis = \yii::$app->redis;
+		$conf->setDrMsgCb(function ($kafka, $message) use ($redis) {
+			if ($message->err)
 			{
-				$conf = new \RdKafka\Conf();
-				$conf->set('log.connection.close', 'false');//防止断开连接
-				$conf->set('api.version.request', 'true');//api请求版本
-				$redis = \yii::$app->redis;
-				$conf->setDrMsgCb(function ($kafka, $message) use($redis) {
-					if ($message->err)
-					{
-						$redis->executeCommand('lpush', ['kafka-fail-que',var_export($message, true)]);
-					}else
-					{
-						//success
-					}
-				});
-				$rk = new \RdKafka\Producer($conf);
-				$rk->setLogLevel(LOG_DEBUG);
-				$rk->addBrokers(\Yii::$app->params['kafka_borker']);
-				$topicConf = new \RdKafka\TopicConf();
-				// 开启提交失败重复提交
-				$topicConf->set("request.required.acks", 1); // 1 节点下线时候保证不会重复发送(可能丢失) -1要副本都确认 节点异常有可能节点会重复发(不会丢失)
-				$topic[$queName] = $rk->newTopic($queName, $topicConf);
+				$redis->executeCommand('lpush', ['kafka-fail-que',var_export($message, true)]);
+			}else
+			{
+				// success
 			}
-			$res=$topic[$queName]->produce(RD_KAFKA_PARTITION_UA, 0, json_encode($params));
-			//$rk->poll(0);
+		});
+		$rk = new \RdKafka\Producer($conf);
+		// $rk->setLogLevel(LOG_DEBUG);
+		$rk->addBrokers(\Yii::$app->params['kafka_borker']);
+		$topicConf = new \RdKafka\TopicConf();
+		// 开启提交失败重复提交
+		$topicConf->set("request.required.acks", 1); // 1 节点下线时候保证不会重复发送(可能丢失) -1要副本都确认 节点异常有可能节点会重复发(不会丢失)
+		//$topicConf->set("message.timeout.ms", 1000); // 消息超时时间
+		if ($topic[$queName] === null)
+		{
+			$topic[$queName] = $rk->newTopic($queName, $topicConf);
+		}
+		$res = $topic[$queName]->produce(RD_KAFKA_PARTITION_UA, 0, json_encode($params));
+		//$rk->poll(0);
 		return $res;
 	}
 }
