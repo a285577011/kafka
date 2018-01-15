@@ -37,6 +37,8 @@ class KafkaService
 			if ($topic[$queName] === null)
 			{
 				$conf = new \RdKafka\Conf();
+				$conf->set('log.connection.close', 'false');//防止断开连接
+				$conf->set('api.version.request', 'true');//api请求版本
 				$redis = \yii::$app->redis;
 				$conf->setDrMsgCb(function ($kafka, $message) use($redis) {
 					if ($message->err)
