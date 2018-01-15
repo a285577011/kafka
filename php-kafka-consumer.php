@@ -11,6 +11,9 @@ class KafkaConsumerController extends Controller
 	/**
 	 * kafka消费者(手动提交)
 	 */
+	/**
+	 * kafka消费者(手动提交)
+	 */
 	public function actionConsumer($topic)
 	{
 		pcntl_signal(SIGHUP, [$this,"sigHandler"]);
@@ -35,7 +38,9 @@ class KafkaConsumerController extends Controller
 					break;
 				
 				default:
-					throw new \Exception($err);
+					\yii::$app->redis->executeCommand('lpush', ['kafka-setRebalanceCb-fail',var_export($err,true)]);
+					//send error
+					//throw new \Exception($err);
 			}
 		});
 		
@@ -54,7 +59,7 @@ class KafkaConsumerController extends Controller
 		// offset store or the desired offset is out of range.
 		// 'smallest': start from the beginning
 		$topicConf->set('auto.offset.reset', 'earliest');
-		// $topicConf->set('auto.commit.enable', 'false');
+		$topicConf->set('offset.store.method','broker');
 		// $topicConf->set('auto.commit.interval.ms', 100);
 		// Set the configuration to use for subscribed/assigned topics
 		$conf->setDefaultTopicConf($topicConf);
@@ -73,7 +78,9 @@ class KafkaConsumerController extends Controller
 				case RD_KAFKA_RESP_ERR_NO_ERROR:
 					$className = '\app\modules\tools\kafka\\' . ucfirst($topic);
 					$class = new $className();
+					//var_dump(call_user_func_array(array($class,'run'), ['data' => json_decode($message->payload, true)]));
 					call_user_func_array(array($class,'run'), ['data' => json_decode($message->payload, true)]);
+					\yii::$app->db->close();
 					try
 					{//如果失败尝试提交两次（防节点崩溃）
 						$this->consumer->commit();
@@ -82,11 +89,14 @@ class KafkaConsumerController extends Controller
 					{
 						try
 						{
+							usleep(500000);
 							$this->consumer->commit();
 						}
 						catch (\Exception $e)
 						{
-							$this->consumer->commit();
+							\yii::$app->redis->executeCommand('lpush', ['kafka-commit-fail',$e->getMessage().';code:'.$e->getCode()]);
+							
+							//$this->consumer->commit();
 						}
 					}
 					pcntl_signal_dispatch();
@@ -100,12 +110,13 @@ class KafkaConsumerController extends Controller
 					pcntl_signal_dispatch();
 					break;
 				default:
-					throw new \Exception($message->errstr(), $message->err);
+					\yii::$app->redis->executeCommand('lpush', ['kafka-consume-fail',$message->errstr().';code:'.$message->err]);
+					//send
+					//throw new \Exception($message->errstr(), $message->err);
 					break;
 			}
 		}
 	}
-
 	private function sigHandler($signo)
 	{
 		switch ($signo) {
