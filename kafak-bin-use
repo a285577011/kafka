@@ -1,6 +1,6 @@
-bin/kafka-topics.sh --zookeeper 211.149.170.87:2181 --delete --topic backupOrder 删除主题
-/usr/local/kafka1.0.0/bin/kafka-topics.sh --zookeeper  211.149.170.87:2181 --list 列出所有主题
-/usr/local/kafka1.0.0/bin/kafka-topics.sh --describe --zookeeper  122.114.160.165:2181 --topic test4 查
+bin/kafka-topics.sh --zookeeper xxxx:2181 --delete --topic backupOrder 删除主题
+/usr/local/kafka1.0.0/bin/kafka-topics.sh --zookeeper  xxxx:2181 --list 列出所有主题
+/usr/local/kafka1.0.0/bin/kafka-topics.sh --describe --zookeeper  xxxx:2181 --topic test4 查
 
 看主题详情
 bin/kafka-run-class.sh kafka.tools.DumpLogSegments --files /var/kafka-data/kafka-logs-9092/CancleOrder-
