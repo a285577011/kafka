@@ -52,7 +52,9 @@ func main() {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers":    broker,
 		"group.id":             group,
-		"session.timeout.ms":   6000,
+		"session.timeout.ms":   60000,
+		"enable.auto.commit": true,
+		"auto.commit.interval.ms":100,
 		"default.topic.config": kafka.ConfigMap{"auto.offset.reset": "earliest"}})
 
 	if err != nil {
