@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"app/lib"
 	//"strconv"
+	"unsafe"
 )
 
 const DEBUG string = "1"
@@ -43,6 +44,7 @@ func main() {
 	}
 
 	topic := os.Args[1]
+	SetProcessName(topic);
 	subTopic:="Gula-"+topic
 	group := subTopic
 	broker:=lib.GetConfig("base")["kafka_borker.address"].String()
@@ -67,7 +69,6 @@ func main() {
 	err = c.SubscribeTopics(topics, nil)
 
 	run := true
-
 	for run == true {
 		select {
 		case sig := <-sigchan:
@@ -78,14 +79,15 @@ func main() {
 			if ev == nil {
 				continue
 			}
-
 			switch e := ev.(type) {
 			case *kafka.Message:
+				//c.Commit()
 				phpExe := lib.GetConfig("phpcli")["phpExe.name"].String()
 				cliFile:= lib.GetConfig("phpcli")["cli.file"].String()
 				lib.ExecPhp(phpExe,[]string{cliFile,topic,string(e.Value)})
+				fmt.Printf("%% Reached %v\n", e.TopicPartition)
 				//lib.LogWrite("result:"+res,"kafka-consumer-"+topic)
-				//fmt.Printf("result:"+res)
+				//fmt.Printf(e.TopicPartition)
 			case kafka.PartitionEOF:
 				fmt.Printf("%% Reached %v\n", e)
 			case kafka.Error:
@@ -99,4 +101,13 @@ func main() {
 
 	fmt.Printf("Closing consumer\n")
 	c.Close()
+	os.Exit(0)
+}
+func SetProcessName(name string) error {
+	bytes := append([]byte(name), 0)
+	ptr := unsafe.Pointer(&bytes[0])
+	if _, _, errno := syscall.RawSyscall6(syscall.SYS_PRCTL, syscall.PR_SET_NAME, uintptr(ptr), 0, 0, 0, 0); errno != 0 {
+		return syscall.Errno(errno)
+	}
+	return nil
 }
