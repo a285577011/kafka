@@ -198,3 +198,4 @@ delete.topic.enable=true
 controller.socket.timeout.ms=600000
 offsets.commit.timeout.ms=10000
 offsets.retention.minutes=143200
+group.max.session.timeout.ms=6000000
