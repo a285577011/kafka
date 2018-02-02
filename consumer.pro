@@ -16,7 +16,7 @@
 
 # list of brokers used for bootstrapping knowledge about the rest of the cluster
 # format: host1:port1,host2:port2 ...
-bootstrap.servers=122.114.160.165:9092,122.114.160.165:9093,122.114.160.165:9094
+bootstrap.servers=xxxx:9092,xxxx:9093,xxxx:9094
 
 # consumer group id
 group.id=test-consumer-group
