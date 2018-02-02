@@ -28,7 +28,7 @@ port=9092
 #     listeners = listener_name://host_name:port
 #   EXAMPLE:
 #     listeners = PLAINTEXT://your.host.name:9092
-listeners=PLAINTEXT://122.114.160.165:9092
+listeners=PLAINTEXT://xxxx:9092
 #listeners=SASL_PLAINTEXT://122.114.160.165:9092
 #security.inter.broker.protocol=SASL_PLAINTEXT
 #sasl.enabled.mechanisms=PLAIN
