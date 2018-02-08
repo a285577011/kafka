@@ -29,7 +29,7 @@ class KafkaService
 				$conf = new \RdKafka\Conf();
 				$conf->set('log.connection.close', 'false'); // 防止断开连接
 				$conf->set('api.version.request', 'false'); // api请求版本
-				$conf->set('socket.blocking.max.ms', 1); // broker 在 socket 操作时最大阻塞时间(提高发送速度，否则出现延迟1秒情况)
+				$conf->set('socket.blocking.max.ms', 50); // broker 在 socket 操作时最大阻塞时间(提高发送速度，否则出现延迟1秒情况)
 				$redis = \yii::$app->redis;
 				$conf->setDrMsgCb(function ($kafka, $message) use ($redis) {
 					if ($message->err)
