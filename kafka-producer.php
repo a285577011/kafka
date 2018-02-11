@@ -28,8 +28,9 @@ class KafkaService
 			{
 				$conf = new \RdKafka\Conf();
 				$conf->set('log.connection.close', 'false'); // 防止断开连接
-				$conf->set('api.version.request', 'false'); // api请求版本
+				$conf->set('api.version.request', 'true'); // api请求版本
 				$conf->set('socket.blocking.max.ms', 50); // broker 在 socket 操作时最大阻塞时间(提高发送速度，否则出现延迟1秒情况)
+				$conf->set('request.timeout.ms', 600001);
 				$redis = \yii::$app->redis;
 				$conf->setDrMsgCb(function ($kafka, $message) use ($redis) {
 					if ($message->err)
@@ -85,7 +86,8 @@ class KafkaService
 		// 开启提交失败重复提交
 		$topicConf->set("request.required.acks", 1); // 1 节点下线时候保证不会重复发送(可能丢失) -1要副本都确认 节点异常有可能节点会重复发(不会丢失)
 		$topic = $producer->newTopic($queName, $topicConf); // 创建主题topic
-		$res = $topic->produce(RD_KAFKA_PARTITION_UA, 0, json_encode($params));
+		$params=json_encode($params);
+		$res = $topic->produce(RD_KAFKA_PARTITION_UA, 0, $params);
 		$producer->poll(0);
 		return $res;
 	}
@@ -113,7 +115,7 @@ class KafkaService
 		// 开启提交失败重复提交
 		$topicConf->set("request.required.acks", 0); //
 		$topic = $producer->newTopic($queName, $topicConf);
-		$res = $topic->produce(RD_KAFKA_PARTITION_UA, 0, json_encode(['type' => $logName,'data' => var_export($data, true),'log_ctime' => time(),'c_time' => time()]));
+		$res = $topic->produce(RD_KAFKA_PARTITION_UA, 0, json_encode(['topic'=>$logName,'type' => $logName,'data' => var_export($data, true),'log_ctime' => time(),'c_time' => time()]));
 		$producer->poll(0);
 		return $res;
 	}
