@@ -46,7 +46,7 @@ func main() {
 	topic := os.Args[1]
 	SetProcessName(topic);
 	subTopic:="Gula-"+topic
-	group := subTopic
+	group := lib.GetConfig("base")["kafka_borker.groupPrefix"].String()+subTopic
 	broker:=lib.GetConfig("base")["kafka_borker.address"].String()
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
@@ -54,9 +54,11 @@ func main() {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers":    broker,
 		"group.id":             group,
-		"session.timeout.ms":   60000,
+		"session.timeout.ms":   600000,
 		"enable.auto.commit": true,
 		"auto.commit.interval.ms":100,
+		"log.connection.close":false,
+		"api.version.request":true,
 		"default.topic.config": kafka.ConfigMap{"auto.offset.reset": "earliest"}})
 
 	if err != nil {
@@ -67,7 +69,6 @@ func main() {
 	fmt.Printf("Created Consumer %v\n", c)
 	topics:=[]string{subTopic}
 	err = c.SubscribeTopics(topics, nil)
-
 	run := true
 	for run == true {
 		select {
@@ -82,6 +83,8 @@ func main() {
 			switch e := ev.(type) {
 			case *kafka.Message:
 				//c.Commit()
+
+
 				phpExe := lib.GetConfig("phpcli")["phpExe.name"].String()
 				cliFile:= lib.GetConfig("phpcli")["cli.file"].String()
 				lib.ExecPhp(phpExe,[]string{cliFile,topic,string(e.Value)})
