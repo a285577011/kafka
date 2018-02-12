@@ -54,11 +54,12 @@ func main() {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers":    broker,
 		"group.id":             group,
-		"session.timeout.ms":   600000,
+		"session.timeout.ms":   60000,
 		"enable.auto.commit": true,
 		"auto.commit.interval.ms":100,
-		"log.connection.close":false,
+		"log.connection.close":"false",
 		"api.version.request":true,
+		"debug":lib.GetConfig("base")["kafka_borker.debug"].String(),
 		"default.topic.config": kafka.ConfigMap{"auto.offset.reset": "earliest"}})
 
 	if err != nil {
@@ -83,8 +84,6 @@ func main() {
 			switch e := ev.(type) {
 			case *kafka.Message:
 				//c.Commit()
-
-
 				phpExe := lib.GetConfig("phpcli")["phpExe.name"].String()
 				cliFile:= lib.GetConfig("phpcli")["cli.file"].String()
 				lib.ExecPhp(phpExe,[]string{cliFile,topic,string(e.Value)})
