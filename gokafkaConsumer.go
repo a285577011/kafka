@@ -29,6 +29,7 @@ import (
 	"syscall"
 	//"strconv"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -84,6 +85,7 @@ func main() {
 				maxGoruntineNum := lib.GetConfig("base")["kafka_consumer.goruntineNum"].Int()
 				if goruntineNum >= maxGoruntineNum {
 					fmt.Printf("%% over-goruntine %v\n", maxGoruntineNum)
+					time.Sleep(time.Second * 3)
 					continue
 				}
 				ev := c.Poll(100)
@@ -145,7 +147,7 @@ func main() {
 			}
 		}
 	}
-	fmt.Printf("Closing-Goruntine consumer\n")
+	fmt.Printf("Closing consumer\n")
 	c.Close()
 	os.Exit(0)
 }
