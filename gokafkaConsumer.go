@@ -21,19 +21,19 @@ package main
 // to retrieve messages and events.
 
 import (
+	"app/lib"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"os"
 	"os/signal"
 	"syscall"
-	"app/lib"
 	//"strconv"
+	"sync"
 	"unsafe"
 )
 
-const DEBUG string = "1"
 func init() {
-	lib.InitConfig(DEBUG) //初始化配置
+	lib.InitConfig("1") //初始化配置
 
 }
 func main() {
@@ -44,23 +44,23 @@ func main() {
 	}
 
 	topic := os.Args[1]
-	SetProcessName(topic);
-	subTopic:="Gula-"+topic
-	group := lib.GetConfig("base")["kafka_borker.groupPrefix"].String()+subTopic
-	broker:=lib.GetConfig("base")["kafka_borker.address"].String()
+	SetProcessName(topic)
+	subTopic := "Gula-" + topic
+	group := lib.GetConfig("base")["kafka_borker.groupPrefix"].String() + subTopic
+	broker := lib.GetConfig("base")["kafka_borker.address"].String()
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":    broker,
-		"group.id":             group,
-		"session.timeout.ms":   60000,
-		"enable.auto.commit": true,
-		"auto.commit.interval.ms":100,
-		"log.connection.close":"false",
-		"api.version.request":true,
-		"debug":lib.GetConfig("base")["kafka_borker.debug"].String(),
-		"default.topic.config": kafka.ConfigMap{"auto.offset.reset": "earliest"}})
+		"bootstrap.servers":       broker,
+		"group.id":                group,
+		"session.timeout.ms":      60000,
+		"enable.auto.commit":      true,
+		"auto.commit.interval.ms": 100,
+		"log.connection.close":    "false",
+		"api.version.request":     true,
+		"debug":                   lib.GetConfig("base")["kafka_borker.debug"].String(),
+		"default.topic.config":    kafka.ConfigMap{"auto.offset.reset": "earliest"}})
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create consumer: %s\n", err)
@@ -68,40 +68,84 @@ func main() {
 	}
 
 	fmt.Printf("Created Consumer %v\n", c)
-	topics:=[]string{subTopic}
+	topics := []string{subTopic}
 	err = c.SubscribeTopics(topics, nil)
 	run := true
-	for run == true {
-		select {
-		case sig := <-sigchan:
-			fmt.Printf("Caught signal %v: terminating\n", sig)
-			run = false
-		default:
-			ev := c.Poll(100)
-			if ev == nil {
-				continue
-			}
-			switch e := ev.(type) {
-			case *kafka.Message:
-				//c.Commit()
-				phpExe := lib.GetConfig("phpcli")["phpExe.name"].String()
-				cliFile:= lib.GetConfig("phpcli")["cli.file"].String()
-				lib.ExecPhp(phpExe,[]string{cliFile,topic,string(e.Value)})
-				fmt.Printf("%% Reached %v\n", e.TopicPartition)
-				//lib.LogWrite("result:"+res,"kafka-consumer-"+topic)
-				//fmt.Printf(e.TopicPartition)
-			case kafka.PartitionEOF:
-				fmt.Printf("%% Reached %v\n", e)
-			case kafka.Error:
-				fmt.Fprintf(os.Stderr, "%% Error: %v\n", e)
+	if lib.GetConfig("base")["kafka_consumer.doGoruntine"].String() == "1" {
+		wg := &sync.WaitGroup{} //并发处理
+		var goruntineNum int64
+		goruntineNum = 0
+		for run == true {
+			select {
+			case sig := <-sigchan:
+				fmt.Printf("Caught signal %v: terminating\n", sig)
 				run = false
 			default:
-				fmt.Printf("Ignored %v\n", e)
+				maxGoruntineNum := lib.GetConfig("base")["kafka_consumer.goruntineNum"].Int()
+				if goruntineNum >= maxGoruntineNum {
+					fmt.Printf("%% over-goruntine %v\n", maxGoruntineNum)
+					continue
+				}
+				ev := c.Poll(100)
+				if ev == nil {
+					continue
+				}
+				switch e := ev.(type) {
+				case *kafka.Message:
+					//c.Commit()
+					phpExe := lib.GetConfig("phpcli")["phpExe.name"].String()
+					cliFile := lib.GetConfig("phpcli")["cli.file"].String()
+					wg.Add(1)
+					goruntineNum++
+					go lib.GoExecPhp(phpExe, []string{cliFile, topic, string(e.Value)}, wg, &goruntineNum)
+					fmt.Printf("%% Goruntine-num %v\n", goruntineNum)
+					fmt.Printf("%% Reached-Goruntine %v\n", e.TopicPartition)
+					//lib.LogWrite("result:"+res,"kafka-consumer-"+topic)
+					//fmt.Printf(e.TopicPartition)
+				case kafka.PartitionEOF:
+					fmt.Printf("%% Reached-Goruntine %v\n", e)
+				case kafka.Error:
+					fmt.Fprintf(os.Stderr, "%% Error: %v\n", e)
+					run = false
+				default:
+					fmt.Printf("Ignored-Goruntine %v\n", e)
+				}
+			}
+		}
+		fmt.Printf("wait-Goruntine ...\n")
+		wg.Wait()
+	} else {
+		for run == true {
+			select {
+			case sig := <-sigchan:
+				fmt.Printf("Caught signal %v: terminating\n", sig)
+				run = false
+			default:
+				ev := c.Poll(100)
+				if ev == nil {
+					continue
+				}
+				switch e := ev.(type) {
+				case *kafka.Message:
+					//c.Commit()
+					phpExe := lib.GetConfig("phpcli")["phpExe.name"].String()
+					cliFile := lib.GetConfig("phpcli")["cli.file"].String()
+					lib.ExecPhp(phpExe, []string{cliFile, topic, string(e.Value)})
+					fmt.Printf("%% Reached %v\n", e.TopicPartition)
+				//lib.LogWrite("result:"+res,"kafka-consumer-"+topic)
+				//fmt.Printf(e.TopicPartition)
+				case kafka.PartitionEOF:
+					fmt.Printf("%% Reached %v\n", e)
+				case kafka.Error:
+					fmt.Fprintf(os.Stderr, "%% Error: %v\n", e)
+					run = false
+				default:
+					fmt.Printf("Ignored %v\n", e)
+				}
 			}
 		}
 	}
-
-	fmt.Printf("Closing consumer\n")
+	fmt.Printf("Closing-Goruntine consumer\n")
 	c.Close()
 	os.Exit(0)
 }
