@@ -14,6 +14,7 @@
 # limitations under the License.
 # the directory where the snapshot is stored.
 dataDir=/var/zookeeper/data
+dataLogDir=/var/zookeeper/log
 # the port at which the clients will connect
 clientPort=2181
 # disable the per-ip limit on the number of connections since this is a non-production config
@@ -21,7 +22,9 @@ maxClientCnxns=0
 tickTime=4000
 initLimit=20
 syncLimit=10
-server.1=xxx:2888:3888
-server.2=xxx:2888:3888
-server.3=xxx:2888:3888
-zookeeper.connect=xxx:2181,xxx:2181,xxx:2181
+#forceSync=no
+fsync.warningthresholdms=5000
+server.1=xxx
+server.2=xxx
+server.3=xxx
+zookeeper.connect=xxx
