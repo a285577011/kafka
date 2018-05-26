@@ -18,8 +18,9 @@ dataDir=/var/zookeeper/data
 clientPort=2181
 # disable the per-ip limit on the number of connections since this is a non-production config
 maxClientCnxns=0
-initLimit=10
-syncLimit=5
+tickTime=4000
+initLimit=20
+syncLimit=10
 server.1=xxx:2888:3888
 server.2=xxx:2888:3888
 server.3=xxx:2888:3888
