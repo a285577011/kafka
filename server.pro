@@ -28,7 +28,7 @@ port=9092
 #     listeners = listener_name://host_name:port
 #   EXAMPLE:
 #     listeners = PLAINTEXT://your.host.name:9092
-listeners=PLAINTEXT://xxxx:9092
+listeners=PLAINTEXT://xxxxx:9092
 #listeners=SASL_PLAINTEXT://122.114.160.165:9092
 #security.inter.broker.protocol=SASL_PLAINTEXT
 #sasl.enabled.mechanisms=PLAIN
@@ -125,7 +125,7 @@ log.retention.check.interval.ms=300000
 # server. e.g. "127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002".
 # You can also append an optional chroot string to the urls to specify the
 # root directory for all kafka znodes.
-zookeeper.connect=122.114.160.165:2181,211.149.170.87:2181,211.149.169.210:2181
+zookeeper.connect=xxxx
 
 # Timeout in ms for connecting to zookeeper
 zookeeper.connection.timeout.ms=12000
@@ -152,8 +152,8 @@ replica.fetch.wait.max.ms=500
 replica.high.watermark.checkpoint.interval.ms=5000
 replica.socket.timeout.ms=30000
 replica.socket.receive.buffer.bytes=65536
-replica.lag.time.max.ms=10000
-replica.lag.max.messages=4000
+replica.lag.time.max.ms=20000
+#replica.lag.max.messages=4000
 
 # Log configuration
 num.partitions=16
@@ -169,7 +169,7 @@ log.retention.check.interval.ms=300000
 log.segment.bytes=1073741824
 # ZK configuration
 zookeeper.connection.timeout.ms=12000
-zookeeper.sync.time.ms=2000
+zookeeper.sync.time.ms=10000
 
 # Socket server configuration
 #num.io.threads=8
@@ -199,3 +199,4 @@ controller.socket.timeout.ms=600000
 offsets.commit.timeout.ms=10000
 offsets.retention.minutes=143200
 group.max.session.timeout.ms=6000000
+zookeeper.session.timeout.ms=24000
